@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,5 +104,23 @@ func update(cs *kubernetes.Clientset, td *tData) {
 			}
 		}
 	}
-	td.Updated = time.Now()
+	td.Updated = time.Now().In(location())
+}
+
+var loc struct {
+	once sync.Once
+	l    *time.Location
+}
+
+func location() *time.Location {
+	loc.once.Do(func() {
+		l, err := time.LoadLocation("Europe/Berlin")
+		if err != nil {
+			log.Printf("load location: %v\n", err)
+			loc.l = time.UTC
+			return
+		}
+		loc.l = l
+	})
+	return loc.l
 }
